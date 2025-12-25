@@ -33,11 +33,54 @@ async def test_get_weather_endpoint_with_mocked_provider():
 
 
 @pytest.mark.asyncio
-async def test_get_weather_endpoint_provider_raises_error():
+@respx.mock
+async def test_get_weather_endpoint_cache_not_available():
     mock_cache = RedisCache()
-    mock_cache.get_weather = AsyncMock(side_effect=RuntimeError("Provider error"))
+    mock_cache.get_weather = AsyncMock(return_value=None)
+    mock_cache.get_city_geo  = AsyncMock(return_value=None)
+    mock_cache.cache_city_geo = AsyncMock()
     app.state.cache = mock_cache
+
+    respx.get("https://geocoding-api.open-meteo.com/v1/search").mock(
+        return_value=Response(
+            200,
+            json={"results": [{"latitude": 55.0, "longitude": 83.0}]}
+        )
+    )
+
+    respx.get("https://api.open-meteo.com/v1/forecast").mock(return_value=Response(
+            200,
+            json={
+                "latitude": 55.0,
+                "longitude": 83.0,
+                "generationtime_ms": 0.055789947509765625,
+                "utc_offset_seconds": 0,
+                "timezone": "GMT",
+                "timezone_abbreviation": "GMT",
+                "elevation": 135.0,
+                "current_weather_units": {
+                    "time": "iso8601",
+                    "interval": "seconds",
+                    "temperature": "°C",
+                    "windspeed": "km/h",
+                    "winddirection": "°",
+                    "is_day": "",
+                    "weathercode": "wmo code"
+                },
+                "current_weather": {
+                    "time": "2025-12-25T14:30",
+                    "interval": 900,
+                    "temperature": -4.8,
+                    "windspeed": 12.4,
+                    "winddirection": 197,
+                    "is_day": 0,
+                    "weathercode": 71
+                }
+            }
+        ))
 
     with patch("app.cache.redis_cache", mock_cache):
         response = client.get("/weather?city=Paris")
-        assert response.status_code == 500
+        assert response.status_code == 200
+        data = response.json()
+        assert data["current_weather"]["temperature"] == -4.8
