@@ -68,3 +68,8 @@ Redis runs internally at redis://redis:6379 for the API container
 ```bash
 docker-compose down
 ```
+## Improvements
+
+- **Type Validation from External APIs:** Implement robust validation to ensure data received from external APIs is correctly typed and handled safely.
+- **Metrics API to Prometheus:** Expose key application metrics to Prometheus for monitoring and alerting.
+- **Testing:** Increase test coverage and add edge case tests.
