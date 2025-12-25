@@ -64,3 +64,23 @@ async def test_raises_if_redis_not_connected():
 
     result = await cache.get_weather("Paris")
     assert result is None
+
+@pytest.mark.asyncio
+async def test_raises_if_redis_raises_error():
+    cache = RedisCache()
+    cache.redis = AsyncMock()
+    cache.redis.set.side_effect = RuntimeError("Redis error")
+    cache.redis.get.side_effect = RuntimeError("Redis error")
+
+
+    result = await cache.cache_city_geo("London", 51.5, -0.1)
+    assert result is None
+
+    result = await cache.get_city_geo("London")
+    assert result is None
+
+    result = await cache.cache_weather("Paris", {"temp": 20})
+    assert result is None
+
+    result = await cache.get_weather("Paris")
+    assert result is None
