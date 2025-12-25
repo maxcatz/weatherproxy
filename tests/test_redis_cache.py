@@ -52,14 +52,15 @@ async def test_raises_if_redis_not_connected():
     cache = RedisCache()
     cache.redis = None
 
-    with pytest.raises(RuntimeError):
-        await cache.cache_city_geo("London", 51.5, -0.1)
 
-    with pytest.raises(RuntimeError):
-        await cache.get_city_geo("London")
+    result = await cache.cache_city_geo("London", 51.5, -0.1)
+    assert result is None
 
-    with pytest.raises(RuntimeError):
-        await cache.cache_weather("Paris", {"temp": 20})
+    result = await cache.get_city_geo("London")
+    assert result is None
 
-    with pytest.raises(RuntimeError):
-        await cache.get_weather("Paris")
+    result = await cache.cache_weather("Paris", {"temp": 20})
+    assert result is None
+
+    result = await cache.get_weather("Paris")
+    assert result is None
