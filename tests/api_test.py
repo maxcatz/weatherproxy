@@ -84,3 +84,27 @@ async def test_get_weather_endpoint_cache_not_available():
         assert response.status_code == 200
         data = response.json()
         assert data["current_weather"]["temperature"] == -4.8
+
+@pytest.mark.asyncio
+@respx.mock
+async def test_weather_endpoint_geocoding_city_not_found():
+    mock_cache = RedisCache()
+    mock_cache.get_weather = AsyncMock(return_value=None)
+    mock_cache.get_city_geo = AsyncMock(return_value=None)
+    mock_cache.cache_city_geo = AsyncMock()
+    app.state.cache = mock_cache
+
+    city = "ZZ"
+
+    respx.get("https://geocoding-api.open-meteo.com/v1/search").mock(
+        return_value=Response(
+            200,
+            json={"generationtime_ms": 0.109910965}
+        )
+    )
+
+    response = client.get(f"/weather?city={city}")
+
+    assert response.status_code == 404
+    data = response.json()
+    assert data['detail'] ==  "City 'ZZ' not found"
